@@ -38,166 +38,312 @@ from semantic_match import SemanticMatcher
 # ---------------------------------------------------------------------------
 st.set_page_config(
     page_title="RedrobRanker — AI Hiring Co-Pilot",
-    page_icon="🧠",
+    page_icon="📁",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
 # ---------------------------------------------------------------------------
-# Global CSS — subtle professional polish
+# Global CSS — "case file" / hiring dossier aesthetic
+#
+# Token system:
+#   paper     #E7E3D4   page background
+#   panel     #DEDAC8   recessed panel background
+#   ink       #23241F   primary text
+#   ink-soft  #5B5C51   secondary text
+#   navy      #26333F   structure / sidebar
+#   navy-2    #35485A   sidebar hover / lighter structure
+#   red       #A93226   flag / reject stamp
+#   green     #3F6C4A   hire stamp
+#   amber     #A9862F   rank / score accent
+#   hairline  #C4BFA9   dividers, borders
+#
+# Type:
+#   display   "Zilla Slab"      headers, hero title, stamps
+#   mono      "IBM Plex Mono"   candidate IDs, ranks, scores
+#   body      "IBM Plex Sans"   everything else
 # ---------------------------------------------------------------------------
 st.markdown(
     """
     <style>
-    /* System font stack — no external resources required */
+    @import url('https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+    :root {
+        --paper: #E7E3D4;
+        --panel: #DEDAC8;
+        --ink: #23241F;
+        --ink-soft: #5B5C51;
+        --navy: #26333F;
+        --navy-2: #35485A;
+        --red: #A93226;
+        --green: #3F6C4A;
+        --amber: #8C6D1F;
+        --hairline: #C4BFA9;
+    }
+
     html, body, [class*="css"] {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+        font-family: 'IBM Plex Sans', sans-serif;
+        color: var(--ink);
     }
 
-    /* Muted sidebar background */
-    [data-testid="stSidebar"] { background: #0f1117; }
-    [data-testid="stSidebar"] * { color: #e0e0e0 !important; }
+    .stApp { background: var(--paper); }
 
-    /* Hero gradient banner */
-    .hero-banner {
-        background: linear-gradient(135deg, #1a1f36 0%, #232b4a 60%, #1e2d40 100%);
-        border: 1px solid #2d3561;
-        border-radius: 12px;
-        padding: 2rem 2.5rem;
-        margin-bottom: 1.5rem;
-    }
-    .hero-title {
-        font-size: 2.4rem;
-        font-weight: 700;
-        color: #ffffff;
-        letter-spacing: -0.5px;
-        margin: 0;
-    }
-    .hero-subtitle {
-        font-size: 1.05rem;
-        color: #7c9cbf;
-        margin-top: 0.3rem;
-        margin-bottom: 1rem;
-        font-weight: 400;
-    }
-    .hero-pill {
-        display: inline-block;
-        background: rgba(99, 149, 230, 0.15);
-        border: 1px solid rgba(99, 149, 230, 0.35);
-        border-radius: 20px;
-        padding: 4px 12px;
-        font-size: 0.78rem;
-        color: #93b8f5;
-        margin-right: 6px;
-        margin-top: 4px;
-        font-weight: 500;
-    }
+    h1, h2, h3, .df-title { font-family: 'Zilla Slab', serif; }
 
-    /* Pipeline step card */
-    .pipeline-step {
-        background: #1a1f2e;
-        border-left: 3px solid #3d64c8;
-        border-radius: 6px;
-        padding: 6px 14px;
-        margin: 4px 0;
-        font-size: 0.88rem;
-        color: #c0d0e8;
-        font-weight: 500;
+    code, .mono { font-family: 'IBM Plex Mono', monospace; }
+
+    /* ---------------- Sidebar ---------------- */
+    [data-testid="stSidebar"] {
+        background: var(--navy);
+        border-right: 1px solid #1b2530;
     }
-    .pipeline-arrow {
+    [data-testid="stSidebar"] * { color: #D9DEE3 !important; }
+    [data-testid="stSidebar"] hr { border-color: #3d4e60 !important; }
+
+    .file-tab {
         text-align: center;
-        font-size: 1rem;
-        color: #3d64c8;
-        line-height: 1;
-        margin: 1px 0;
+        padding: 1.4rem 0 0.6rem;
+    }
+    .file-tab-label {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.68rem;
+        letter-spacing: 0.14em;
+        color: #8FA0AF;
+        text-transform: uppercase;
+    }
+    .file-tab-title {
+        font-family: 'Zilla Slab', serif;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #F2F0E6;
+        margin-top: 0.25rem;
+    }
+    .file-tab-sub {
+        font-size: 0.8rem;
+        color: #92A2B0;
+        margin-top: 0.1rem;
     }
 
-    /* Section headers */
+    /* ---------------- Cover sheet (hero) ---------------- */
+    .cover-sheet {
+        background: var(--panel);
+        border: 1px solid var(--hairline);
+        border-radius: 2px;
+        padding: 1.8rem 2.2rem;
+        margin-bottom: 1.4rem;
+        position: relative;
+    }
+    .cover-sheet::before {
+        content: "";
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 4px;
+        background: repeating-linear-gradient(
+            90deg, var(--navy) 0 14px, transparent 14px 20px
+        );
+    }
+    .cover-classification {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.7rem;
+        letter-spacing: 0.16em;
+        color: var(--ink-soft);
+        text-transform: uppercase;
+        border-bottom: 1px solid var(--hairline);
+        padding-bottom: 0.6rem;
+        margin-bottom: 0.9rem;
+    }
+    .cover-title {
+        font-family: 'Zilla Slab', serif;
+        font-size: 2.1rem;
+        font-weight: 700;
+        color: var(--ink);
+        margin: 0;
+        line-height: 1.15;
+    }
+    .cover-subtitle {
+        font-size: 1rem;
+        color: var(--ink-soft);
+        margin-top: 0.3rem;
+        max-width: 620px;
+        line-height: 1.55;
+    }
+    .cover-fields {
+        display: flex;
+        gap: 2.4rem;
+        margin-top: 1.2rem;
+        padding-top: 1rem;
+        border-top: 1px dashed var(--hairline);
+        flex-wrap: wrap;
+    }
+    .cover-field-label {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.66rem;
+        letter-spacing: 0.1em;
+        color: var(--ink-soft);
+        text-transform: uppercase;
+    }
+    .cover-field-value {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.86rem;
+        color: var(--ink);
+        margin-top: 0.15rem;
+    }
+
+    /* ---------------- Section headers ---------------- */
     .section-header {
+        font-family: 'Zilla Slab', serif;
         font-size: 1.15rem;
         font-weight: 600;
-        color: #e8eaf0;
-        border-bottom: 2px solid #2d3561;
-        padding-bottom: 6px;
-        margin: 1.2rem 0 0.8rem;
+        color: var(--ink);
+        border-bottom: 2px solid var(--ink);
+        padding-bottom: 5px;
+        margin: 1.3rem 0 0.8rem;
+        display: inline-block;
     }
 
-    /* Metric card overrides */
+    /* ---------------- Routing slip (pipeline) ---------------- */
+    .routing-slip {
+        border: 1px solid var(--hairline);
+        background: var(--panel);
+        padding: 0.4rem 1rem 0.6rem;
+    }
+    .routing-row {
+        display: flex;
+        align-items: baseline;
+        gap: 0.7rem;
+        padding: 0.5rem 0;
+        border-bottom: 1px dashed var(--hairline);
+    }
+    .routing-row:last-child { border-bottom: none; }
+    .routing-num {
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.78rem;
+        color: var(--amber);
+        font-weight: 600;
+        width: 1.6rem;
+        flex-shrink: 0;
+    }
+    .routing-label {
+        font-size: 0.9rem;
+        color: var(--ink);
+        font-weight: 500;
+    }
+
+    /* ---------------- Metric cards ---------------- */
     [data-testid="metric-container"] {
-        background: #151929;
-        border: 1px solid #252d4a;
-        border-radius: 10px;
-        padding: 0.8rem 1rem;
+        background: var(--panel);
+        border: 1px solid var(--hairline);
+        border-radius: 2px;
+        padding: 0.7rem 1rem;
+    }
+    [data-testid="stMetricValue"] {
+        font-family: 'IBM Plex Mono', monospace !important;
+        color: var(--ink) !important;
+    }
+    [data-testid="stMetricLabel"] {
+        font-family: 'IBM Plex Mono', monospace !important;
+        font-size: 0.72rem !important;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--ink-soft) !important;
     }
 
-    /* Dataframe */
-    [data-testid="stDataFrame"] { border-radius: 8px; overflow: hidden; }
-
-    /* Download button */
-    .stDownloadButton > button {
-        width: 100%;
-        background: linear-gradient(135deg, #2752c9, #3d64c8);
-        color: white;
-        border: none;
-        border-radius: 8px;
-        padding: 0.6rem 1.2rem;
-        font-weight: 600;
-        font-size: 0.95rem;
-    }
-    .stDownloadButton > button:hover {
-        background: linear-gradient(135deg, #3060e0, #4a73d4);
-        box-shadow: 0 4px 14px rgba(55, 100, 200, 0.4);
+    /* ---------------- Dataframe (ledger) ---------------- */
+    [data-testid="stDataFrame"] {
+        border: 1px solid var(--hairline);
+        border-radius: 0;
     }
 
-    /* Primary button */
+    /* ---------------- Buttons ---------------- */
     .stButton > button[kind="primary"] {
-        background: linear-gradient(135deg, #2752c9, #3d64c8);
-        border: none;
-        border-radius: 8px;
-        color: white;
+        background: var(--navy);
+        border: 1px solid var(--navy);
+        border-radius: 2px;
+        color: #F2F0E6;
+        font-family: 'IBM Plex Mono', monospace;
         font-weight: 600;
-        padding: 0.55rem 1.4rem;
-        font-size: 0.95rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        font-size: 0.82rem;
+        padding: 0.6rem 1.4rem;
         width: 100%;
     }
     .stButton > button[kind="primary"]:hover {
-        background: linear-gradient(135deg, #3060e0, #4a73d4);
-        box-shadow: 0 4px 14px rgba(55, 100, 200, 0.4);
+        background: var(--navy-2);
+        border-color: var(--navy-2);
     }
 
-    /* Footer */
+    .stDownloadButton > button {
+        width: 100%;
+        background: var(--ink);
+        color: #F2F0E6;
+        border: 1px solid var(--ink);
+        border-radius: 2px;
+        padding: 0.6rem 1.2rem;
+        font-family: 'IBM Plex Mono', monospace;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        text-transform: uppercase;
+        font-size: 0.82rem;
+    }
+    .stDownloadButton > button:hover {
+        background: #3a3b32;
+        border-color: #3a3b32;
+    }
+
+    /* ---------------- Stamps (recommendation badges) ---------------- */
+    .stamp {
+        display: inline-block;
+        font-family: 'Zilla Slab', serif;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 0.78rem;
+        padding: 3px 10px;
+        border: 2px solid currentColor;
+        border-radius: 3px;
+        transform: rotate(-2.5deg);
+    }
+    .stamp-strong-hire { color: var(--green); }
+    .stamp-hire { color: var(--green); }
+    .stamp-consider { color: var(--amber); }
+    .stamp-reject { color: var(--red); }
+
+    /* ---------------- Redaction bar (honeypot flag) ---------------- */
+    .redaction {
+        display: inline-block;
+        background: var(--ink);
+        color: var(--paper) !important;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        padding: 2px 8px;
+    }
+    .clean-mark {
+        display: inline-block;
+        font-family: 'IBM Plex Mono', monospace;
+        font-size: 0.72rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--green);
+        border-bottom: 1px solid var(--green);
+        padding-bottom: 1px;
+    }
+
+    /* ---------------- Footer ---------------- */
     .footer-box {
-        background: #0e1220;
-        border: 1px solid #1e2540;
-        border-radius: 10px;
-        padding: 1rem 1.5rem;
-        text-align: center;
+        border-top: 1px solid var(--hairline);
+        padding: 1rem 0 0.3rem;
         margin-top: 2rem;
+        text-align: center;
     }
     .footer-text {
-        color: #586080;
-        font-size: 0.8rem;
+        font-family: 'IBM Plex Mono', monospace;
+        color: var(--ink-soft);
+        font-size: 0.72rem;
+        letter-spacing: 0.03em;
         margin: 2px 0;
-    }
-
-    /* Warning/flag badges */
-    .flag-badge {
-        background: rgba(220, 80, 60, 0.15);
-        border: 1px solid rgba(220, 80, 60, 0.4);
-        color: #f08070;
-        border-radius: 4px;
-        padding: 2px 8px;
-        font-size: 0.78rem;
-        font-weight: 600;
-    }
-    .ok-badge {
-        background: rgba(50, 180, 100, 0.12);
-        border: 1px solid rgba(50, 180, 100, 0.3);
-        color: #60c080;
-        border-radius: 4px;
-        padding: 2px 8px;
-        font-size: 0.78rem;
-        font-weight: 600;
     }
     </style>
     """,
@@ -212,69 +358,81 @@ def render_sidebar() -> None:
     with st.sidebar:
         st.markdown(
             """
-            <div style="text-align:center; padding: 1rem 0 0.5rem;">
-                <div style="font-size:3rem; line-height:1;">🧠</div>
-                <div style="font-size:1.3rem; font-weight:700; color:#fff; margin-top:0.4rem;">
-                    RedrobRanker
-                </div>
-                <div style="font-size:0.82rem; color:#6a87b5; margin-top:0.2rem;">
-                    AI Hiring Co-Pilot
-                </div>
+            <div class="file-tab">
+                <div class="file-tab-label">Case File · Sandbox</div>
+                <div class="file-tab-title">RedrobRanker</div>
+                <div class="file-tab-sub">AI Hiring Co-Pilot</div>
             </div>
             """,
             unsafe_allow_html=True,
         )
         st.divider()
 
-        st.markdown("#### 📋 Sandbox Info")
+        st.markdown("#### Sandbox Scope")
         st.markdown(
             """
-            - Accepts **≤ 100 candidates**  
-            - Scores against the **Senior AI Engineer JD**  
-            - Runs **fully offline** — no APIs, no GPU  
-            - Completes within the **5-minute CPU budget**
+            - Accepts up to **100 candidates**
+            - Scored against the **Senior AI Engineer** JD
+            - Runs **fully offline** — no APIs, no GPU
+            - Completes inside the **5-minute** CPU budget
             """
         )
         st.divider()
 
-        st.markdown("#### Ranking Pipeline")
+        st.markdown("#### Assessment Method")
         st.markdown(
             """
-            The pipeline combines **semantic retrieval** with
-            **structured fit scoring** and a **behavioral trust
-            multiplier**, with a final **honeypot consistency check**
-            to demote implausible profiles.
+            Each file passes through **semantic retrieval**,
+            **structured fit scoring**, and a **behavioral trust
+            multiplier**, then a **consistency check** demotes
+            profiles that don't add up.
             """
         )
         st.divider()
 
-        with st.expander("📄Job Description", expanded=False):
+        with st.expander("Job Description on File", expanded=False):
             st.text(JD_TEXT.strip())
 
         st.markdown(
-            "<div style='color:#3a4565; font-size:0.75rem; text-align:center; "
-            "padding-top:1rem;'>submission_spec.md §10.5</div>",
+            "<div style='color:#5f7180; font-family:\"IBM Plex Mono\",monospace; "
+            "font-size:0.7rem; text-align:center; padding-top:1rem;'>"
+            "ref. submission_spec.md §10.5</div>",
             unsafe_allow_html=True,
         )
 
 
 # ===========================================================================
-# Hero Section
+# Hero Section — "cover sheet"
 # ===========================================================================
 def render_hero() -> None:
     st.markdown(
         """
-        <div class="hero-banner">
-            <div class="hero-title"> RedrobRanker</div>
-            <div class="hero-subtitle">AI Hiring Co-Pilot — Offline Candidate Ranking Engine</div>
-            <div style="font-size:0.92rem; color:#8daacf; margin-bottom:1rem; max-width:680px; line-height:1.6;">
-                Upload candidate profiles and receive explainable AI-powered rankings in seconds
-                using an entirely offline ranking engine — no APIs, no GPU, no internet required.
+        <div class="cover-sheet">
+            <div class="cover-classification">Internal · Candidate Assessment Sandbox</div>
+            <div class="cover-title">RedrobRanker</div>
+            <div class="cover-subtitle">
+                Upload a candidate sample and receive a fully reasoned ranking —
+                semantic match, structured fit, and behavioral consistency,
+                assembled offline with no external calls.
             </div>
-            <span class="hero-pill"> Semantic Matching</span>
-            <span class="hero-pill"> Structured Evaluation</span>
-            <span class="hero-pill"> Behavioral Intelligence</span>
-            <span class="hero-pill"> Explainable AI</span>
+            <div class="cover-fields">
+                <div>
+                    <div class="cover-field-label">Requisition</div>
+                    <div class="cover-field-value">Senior AI Engineer</div>
+                </div>
+                <div>
+                    <div class="cover-field-label">Sample Limit</div>
+                    <div class="cover-field-value">100 candidates</div>
+                </div>
+                <div>
+                    <div class="cover-field-label">Compute Budget</div>
+                    <div class="cover-field-value">5 min · CPU only</div>
+                </div>
+                <div>
+                    <div class="cover-field-label">Network</div>
+                    <div class="cover-field-value">offline</div>
+                </div>
+            </div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -289,7 +447,7 @@ def render_input_section() -> Optional[list]:
     left_col, right_col = st.columns([3, 2], gap="large")
 
     with left_col:
-        st.markdown('<div class="section-header">📂 Load Candidates</div>', unsafe_allow_html=True)
+        st.markdown('<div class="section-header">Intake</div>', unsafe_allow_html=True)
 
         uploaded = st.file_uploader(
             "Upload JSONL / JSON candidate sample (≤ 100 rows)",
@@ -313,13 +471,10 @@ def render_input_section() -> Optional[list]:
             if sample_path.exists():
                 with open(sample_path) as f:
                     candidates = json.load(f)
-                st.success(
-                    f"Loaded **{len(candidates)}** candidates from bundled sample.",
-                    icon="📦",
-                )
+                st.success(f"Loaded **{len(candidates)}** candidates from bundled sample.")
             else:
                 st.warning(
-                    "⚠️ No bundled sample found at `data/sample_candidates.json`. "
+                    "No bundled sample found at `data/sample_candidates.json`. "
                     "Upload a file above, or copy the organiser's sample there."
                 )
 
@@ -331,18 +486,18 @@ def render_input_section() -> Optional[list]:
                 ]
             except json.JSONDecodeError:
                 candidates = json.loads(raw)
-            st.success(f"Uploaded **{len(candidates)}** candidates.", icon="📄")
+            st.success(f"Uploaded **{len(candidates)}** candidates.")
 
         if candidates and len(candidates) > 100:
             st.warning(
-                f"⚠️ Sample has {len(candidates)} rows — using the first 100 only "
+                f"Sample has {len(candidates)} rows — using the first 100 only "
                 "(sandbox scope)."
             )
             candidates = candidates[:100]
 
         rank_clicked = False
         if candidates:
-            rank_clicked = st.button("🚀 Rank Candidates", type="primary")
+            rank_clicked = st.button("Run Assessment", type="primary")
         else:
             st.info("Upload a sample or enable the bundled sample checkbox above.")
 
@@ -353,25 +508,24 @@ def render_input_section() -> Optional[list]:
 
 
 def render_pipeline_diagram() -> None:
-    st.markdown('<div class="section-header">🔄 Ranking Pipeline</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">Routing Slip</div>', unsafe_allow_html=True)
     steps = [
-        ("Job Description"),
-        ("Intent Extraction"),
-        ("Semantic Matching"),
-        ("Structured Evaluation"),
-        ("Behavioral Intelligence"),
-        ("Explainable AI"),
-        ("Final Ranking"),
+        "Job Description",
+        "Intent Extraction",
+        "Semantic Matching",
+        "Structured Evaluation",
+        "Behavioral Intelligence",
+        "Consistency Check",
+        "Final Ranking",
     ]
-    for i, (icon, label) in enumerate(steps):
-        st.markdown(
-            f'<div class="pipeline-step">{icon} &nbsp; {label}</div>',
-            unsafe_allow_html=True,
-        )
-        if i < len(steps) - 1:
-            st.markdown(
-                '<div class="pipeline-arrow">↓</div>', unsafe_allow_html=True
-            )
+    rows = "".join(
+        f'<div class="routing-row">'
+        f'<div class="routing-num">{i+1:02d}</div>'
+        f'<div class="routing-label">{label}</div>'
+        f"</div>"
+        for i, label in enumerate(steps)
+    )
+    st.markdown(f'<div class="routing-slip">{rows}</div>', unsafe_allow_html=True)
 
 
 # ===========================================================================
@@ -391,12 +545,17 @@ def get_recommendation(score: float) -> str:
     return "Reject"
 
 
-RECOMMENDATION_EMOJI: dict[str, str] = {
-    "Strong Hire": "🟢",
-    "Hire": "🔵",
-    "Consider": "🟡",
-    "Reject": "🔴",
+STAMP_CLASS: dict[str, str] = {
+    "Strong Hire": "stamp-strong-hire",
+    "Hire": "stamp-hire",
+    "Consider": "stamp-consider",
+    "Reject": "stamp-reject",
 }
+
+
+def render_stamp(recommendation: str) -> str:
+    cls = STAMP_CLASS.get(recommendation, "stamp-consider")
+    return f'<span class="stamp {cls}">{recommendation}</span>'
 
 
 # ===========================================================================
@@ -477,14 +636,14 @@ def run_ranking(candidates: list) -> tuple[pd.DataFrame, list, float]:
     rows.sort(key=lambda r: (-r["score"], r["candidate_id"]))
     for i, row in enumerate(rows):
         row["rank"] = i + 1
-    
+
     # Non-increasing guard
     for i in range(1, len(rows)):
-        if rows[i]["score"] > rows[i-1]["score"]:
-            rows[i]["score"] = rows[i-1]["score"]
+        if rows[i]["score"] > rows[i - 1]["score"]:
+            rows[i]["score"] = rows[i - 1]["score"]
 
     elapsed = time.time() - t0
-    progress_bar.progress(100, text=f"✅ Done — {len(rows)} candidates ranked in {elapsed:.2f}s")
+    progress_bar.progress(100, text=f"Done — {len(rows)} candidates ranked in {elapsed:.2f}s")
 
     df = pd.DataFrame(rows)
     return df, raw_results, elapsed
@@ -494,7 +653,7 @@ def run_ranking(candidates: list) -> tuple[pd.DataFrame, list, float]:
 # KPI Metrics Row
 # ===========================================================================
 def render_kpi_metrics(df: pd.DataFrame, elapsed: float) -> None:
-    st.markdown('<div class="section-header">📈 Summary Metrics</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">Summary</div>', unsafe_allow_html=True)
     c1, c2, c3, c4 = st.columns(4)
 
     total = len(df)
@@ -510,20 +669,20 @@ def render_kpi_metrics(df: pd.DataFrame, elapsed: float) -> None:
         st.metric("Highest Score", f"{top_score:.4f}")
     with c4:
         st.metric(
-            "⚠️ Honeypot Flags",
+            "Flags Raised",
             int(flagged),
             delta=f"{int(flagged)} flagged" if flagged else "All clear",
             delta_color="inverse" if flagged else "normal",
         )
 
-    st.caption(f"⏱ Execution time: {elapsed:.2f}s  ·  Compute budget: 5 min")
+    st.caption(f"Execution time: {elapsed:.2f}s  ·  Compute budget: 5 min")
 
 
 # ===========================================================================
 # Ranking Table
 # ===========================================================================
 def render_ranking_table(df: pd.DataFrame) -> None:
-    st.markdown('<div class="section-header">🏆 Ranked Results</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">Ranked Results</div>', unsafe_allow_html=True)
 
     display_df = (
         df[["rank", "candidate_id", "score", "recommendation", "honeypot_flagged", "reasoning"]]
@@ -534,7 +693,7 @@ def render_ranking_table(df: pd.DataFrame) -> None:
                 "candidate_id": "Candidate ID",
                 "score": "Score",
                 "recommendation": "Recommendation",
-                "honeypot_flagged": "⚠️ Honeypot",
+                "honeypot_flagged": "Flagged",
                 "reasoning": "Reasoning",
             }
         )
@@ -549,7 +708,7 @@ def render_ranking_table(df: pd.DataFrame) -> None:
             "Rank": st.column_config.NumberColumn(width="small"),
             "Score": st.column_config.NumberColumn(format="%.4f", width="small"),
             "Recommendation": st.column_config.TextColumn(width="medium"),
-            "⚠️ Honeypot": st.column_config.CheckboxColumn(width="small"),
+            "Flagged": st.column_config.CheckboxColumn(width="small"),
             "Reasoning": st.column_config.TextColumn(width="large"),
         },
     )
@@ -559,13 +718,8 @@ def render_ranking_table(df: pd.DataFrame) -> None:
 # Candidate Detail Expanders
 # ===========================================================================
 def render_candidate_details(df: pd.DataFrame) -> None:
-    st.markdown(
-        '<div class="section-header"> Candidate Detail Cards</div>',
-        unsafe_allow_html=True,
-    )
-    st.caption(
-        "Top 3 candidates are expanded by default. Click any card to inspect scores and reasoning."
-    )
+    st.markdown('<div class="section-header">Candidate Files</div>', unsafe_allow_html=True)
+    st.caption("Top 3 candidates are expanded by default. Click any file to inspect it.")
 
     sorted_df = df.sort_values("rank").reset_index(drop=True)
 
@@ -573,21 +727,18 @@ def render_candidate_details(df: pd.DataFrame) -> None:
         rank = int(row["rank"])
         flagged = row["honeypot_flagged"]
         rec = row.get("recommendation", "")
-        rec_emoji = RECOMMENDATION_EMOJI.get(rec, "")
-        flag_icon = "  ⚠️" if flagged else ""
-        label = (
-            f"#{rank}  ·  {row['candidate_id']}  "
-            f"·  {rec_emoji} {rec}  ·  Score {row['score']:.4f}{flag_icon}"
-        )
-        # Automatically expand the top 3 candidates
+        flag_note = "  ·  FLAGGED" if flagged else ""
+        label = f"#{rank:02d}  ·  {row['candidate_id']}  ·  {rec}  ·  {row['score']:.4f}{flag_note}"
+
         with st.expander(label, expanded=(rank <= 3)):
             col_a, col_b, col_c = st.columns(3)
 
             with col_a:
                 st.markdown("**Candidate ID**")
                 st.code(row["candidate_id"], language=None)
-                st.markdown(f"**Rank:** {rank}")
-                st.markdown(f"**Recommendation:** {rec_emoji} {rec}")
+                st.markdown(f"**Rank:** {rank:02d}")
+                st.markdown("**Recommendation**")
+                st.markdown(render_stamp(rec), unsafe_allow_html=True)
 
             with col_b:
                 st.markdown("**Score Breakdown**")
@@ -602,19 +753,19 @@ def render_candidate_details(df: pd.DataFrame) -> None:
             with col_c:
                 st.markdown("**Reasoning**")
                 st.markdown(
-                    f"<div style='font-size:0.88rem; color:#b0bdd0; line-height:1.6;'>"
+                    f"<div style='font-size:0.88rem; color:var(--ink-soft); line-height:1.6;'>"
                     f"{row['reasoning']}</div>",
                     unsafe_allow_html=True,
                 )
-                st.markdown("**Honeypot Status**")
+                st.markdown("**Consistency Check**")
                 if flagged:
                     st.markdown(
-                        '<span class="flag-badge">⚠️ Flagged</span>',
+                        '<span class="redaction">Flagged — review</span>',
                         unsafe_allow_html=True,
                     )
                 else:
                     st.markdown(
-                        '<span class="ok-badge">✅ Clean</span>',
+                        '<span class="clean-mark">Clean</span>',
                         unsafe_allow_html=True,
                     )
 
@@ -635,15 +786,15 @@ def _build_histogram_df(scores: pd.Series, bins: int = 20) -> pd.DataFrame:
 
 
 def render_analytics(df: pd.DataFrame) -> None:
-    st.markdown('<div class="section-header">📉 Analytics</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">Analytics</div>', unsafe_allow_html=True)
 
     tab1, tab2, tab3 = st.tabs(
         ["Score Distribution", "Top 10 Candidates", "Recommendation Mix"]
     )
 
     with tab1:
-        st.markdown("##### Score Distribution Histogram")
-        st.bar_chart(_build_histogram_df(df["score"]), use_container_width=True, color="#3d64c8")
+        st.markdown("##### Score Distribution")
+        st.bar_chart(_build_histogram_df(df["score"]), use_container_width=True, color="#26333F")
         st.caption("Each bar represents a score bucket across all ranked candidates.")
 
     with tab2:
@@ -652,7 +803,7 @@ def render_analytics(df: pd.DataFrame) -> None:
             df.nsmallest(10, "rank")[["candidate_id", "score"]]
             .set_index("candidate_id")
         )
-        st.bar_chart(top10, use_container_width=True, color="#3d64c8")
+        st.bar_chart(top10, use_container_width=True, color="#26333F")
         st.caption("Scores of the top 10 ranked candidates.")
 
     with tab3:
@@ -666,10 +817,9 @@ def render_analytics(df: pd.DataFrame) -> None:
         )
         rec_counts.columns = ["Recommendation", "Count"]
         rec_counts = rec_counts.set_index("Recommendation")
-        st.bar_chart(rec_counts, use_container_width=True, color="#3d64c8")
-        # Summary caption using actual counts
+        st.bar_chart(rec_counts, use_container_width=True, color="#26333F")
         parts = [
-            f"{RECOMMENDATION_EMOJI.get(r, '')} **{r}**: {int(rec_counts.loc[r, 'Count'])}"
+            f"**{r}**: {int(rec_counts.loc[r, 'Count'])}"
             for r in order
             if int(rec_counts.loc[r, "Count"]) > 0
         ]
@@ -684,8 +834,8 @@ def render_honeypot_warning(df: pd.DataFrame) -> None:
     if len(flagged) == 0:
         return
     st.warning(
-        f"⚠️ **{len(flagged)} candidate(s)** in this sample tripped a honeypot "
-        f"consistency check and received a strong score penalty. Their IDs: "
+        f"**{len(flagged)} candidate(s)** in this sample tripped a consistency "
+        f"check and received a score penalty. Their IDs: "
         + ", ".join(f"`{cid}`" for cid in flagged["candidate_id"].tolist())
     )
 
@@ -694,7 +844,7 @@ def render_honeypot_warning(df: pd.DataFrame) -> None:
 # Download Section
 # ===========================================================================
 def render_download(df: pd.DataFrame) -> None:
-    st.markdown('<div class="section-header">📥 Download Results</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-header">Export</div>', unsafe_allow_html=True)
 
     csv_bytes = (
         df[["candidate_id", "rank", "score", "reasoning"]]
@@ -706,7 +856,7 @@ def render_download(df: pd.DataFrame) -> None:
     col_dl, col_info = st.columns([1, 2])
     with col_dl:
         st.download_button(
-            label="📥 Download Ranked Results (CSV)",
+            label="Download Ranked Results (CSV)",
             data=csv_bytes,
             file_name="sandbox_ranked_sample.csv",
             mime="text/csv",
@@ -714,9 +864,10 @@ def render_download(df: pd.DataFrame) -> None:
         )
     with col_info:
         st.markdown(
-            "<div style='color:#6a87b5; font-size:0.88rem; padding-top:0.6rem;'>"
-            "Columns: <code>candidate_id · rank · score · reasoning</code><br>"
-            "Matches the format validated by <code>validate_submission.py</code>"
+            "<div style='color:var(--ink-soft); font-family:\"IBM Plex Mono\",monospace; "
+            "font-size:0.8rem; padding-top:0.6rem;'>"
+            "Columns: candidate_id · rank · score · reasoning<br>"
+            "Matches the format validated by validate_submission.py"
             "</div>",
             unsafe_allow_html=True,
         )
@@ -729,8 +880,8 @@ def render_footer() -> None:
     st.markdown(
         """
         <div class="footer-box">
-            <div class="footer-text"> Powered by the <strong>RedrobRanker</strong> offline ranking pipeline.</div>
-            <div class="footer-text"> Runs entirely on CPU — no external APIs, no hosted LLMs, no network access required.</div>
+            <div class="footer-text">POWERED BY THE REDROBRANKER OFFLINE RANKING PIPELINE</div>
+            <div class="footer-text">RUNS ENTIRELY ON CPU · NO EXTERNAL APIS · NO NETWORK ACCESS REQUIRED</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -770,7 +921,7 @@ def main() -> None:
         elapsed = st.session_state.get("elapsed", 0.0)
 
         st.success(
-            f"✅ Ranked **{len(df)} candidates** in **{elapsed:.2f}s** "
+            f"Ranked **{len(df)} candidates** in **{elapsed:.2f}s** "
             f"(compute budget: 5 min)",
         )
 
