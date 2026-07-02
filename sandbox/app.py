@@ -347,44 +347,53 @@ st.markdown(
     }
 
     /* ---------------- Fix: native Streamlit text defaulting to light color on light bg ---------------- */
-    [data-testid="stWidgetLabel"] p,
-    [data-testid="stWidgetLabel"] span,
-    .stCheckbox label p,
-    .stCheckbox label span,
-    [data-testid="stMarkdownContainer"] p,
-    [data-testid="stMarkdownContainer"] li,
-    [data-testid="stMarkdownContainer"] span {
+    /* Scoped to .main so the sidebar (intentionally dark with light text) is untouched. */
+    .main [data-testid="stWidgetLabel"] p,
+    .main [data-testid="stWidgetLabel"] span,
+    .main .stCheckbox label p,
+    .main .stCheckbox label span,
+    .main [data-testid="stMarkdownContainer"] p,
+    .main [data-testid="stMarkdownContainer"] li,
+    .main [data-testid="stMarkdownContainer"] span {
         color: var(--ink) !important;
     }
 
-    [data-testid="stCaptionContainer"],
-    [data-testid="stCaptionContainer"] p,
-    [data-testid="stCaptionContainer"] span {
+    .main [data-testid="stCaptionContainer"],
+    .main [data-testid="stCaptionContainer"] p,
+    .main [data-testid="stCaptionContainer"] span {
         color: var(--ink-soft) !important;
     }
 
-    [data-testid="stProgress"] div {
+    .main [data-testid="stProgress"] div {
         color: var(--ink) !important;
     }
 
-    [data-testid="stProgress"] > div > div > div {
+    .main [data-testid="stProgress"] > div > div > div {
         background-color: var(--navy) !important;
     }
 
-    [data-testid="stFileUploaderDropzoneInstructions"] div,
-    [data-testid="stFileUploaderDropzoneInstructions"] span {
+    .main [data-testid="stFileUploaderDropzoneInstructions"] div,
+    .main [data-testid="stFileUploaderDropzoneInstructions"] span {
         color: var(--ink) !important;
     }
 
-    [data-testid="stExpander"] summary,
-    [data-testid="stExpander"] summary span,
-    [data-testid="stExpander"] summary p {
+    .main [data-testid="stExpander"] summary,
+    .main [data-testid="stExpander"] summary span,
+    .main [data-testid="stExpander"] summary p {
         color: var(--ink) !important;
     }
 
-    [data-testid="stAlertContentInfo"],
-    [data-testid="stAlertContentInfo"] p {
+    .main [data-testid="stAlertContentInfo"],
+    .main [data-testid="stAlertContentInfo"] p {
         color: var(--ink) !important;
+    }
+
+    /* Reassert sidebar text color in case of any specificity ties */
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] li,
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] span,
+    [data-testid="stSidebar"] [data-testid="stCaptionContainer"] {
+        color: #D9DEE3 !important;
     }
     </style>
     """,
