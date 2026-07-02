@@ -1,0 +1,7 @@
+# Core ranking dependencies — all pure Python or pre-compiled wheels
+sentence-transformers>=2.2.0   # dense embedding model (all-MiniLM-L6-v2, ~90MB)
+faiss-cpu>=1.7.0               # FAISS flat index for cosine similarity
+rank_bm25>=0.2.2               # BM25 fallback if embeddings unavailable
+numpy>=1.24.0
+tqdm>=4.64.0                   # progress bars during encoding
+joblib>=1.2.0                  # optional: parallel feature scoring

@@ -1,0 +1,20 @@
+__pycache__/
+*.pyc
+.DS_Store
+submission.csv
+*.egg-info/
+.venv/
+venv/
+
+# Candidate data is provided by the organizers separately and is large (~480MB);
+# don't commit it to the repo. Place it at data/candidates.jsonl locally to run.
+data/candidates.jsonl
+data/candidates.jsonl.gz
+
+# Python
+.venv/
+__pycache__/
+
+# Cache files
+models/cache/
+*.npy

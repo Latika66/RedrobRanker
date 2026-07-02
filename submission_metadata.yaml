@@ -1,0 +1,133 @@
+# Redrob Hackathon — Submission Metadata
+#
+# Filled in from submission_metadata_template.yaml.
+# NOTE: team identity fields below are placeholders -- replace with your real
+# details before submitting. Everything under "Code and reproducibility",
+# "Compute environment", and "AI tools declaration" reflects how this
+# ranker was actually built and run, and should be edited only if your own
+# setup differs.
+
+# ============================================================================
+# Team identity
+# ============================================================================
+team_name: "Orbit Ops"  
+
+primary_contact:
+  name: "Latika"          # EDIT ME
+  email: "latikamuteja77@gmail.com"        # EDIT ME
+  phone: "+91-9873380808"         # EDIT ME
+
+
+# ============================================================================
+# Code and reproducibility
+# ============================================================================
+github_repo: "https://github.com/Latika66/RedrobRanker"  # EDIT ME
+
+sandbox_link: "https://huggingface.co/spaces/YOUR_USERNAME/redrob-ranker"  # EDIT ME
+# See sandbox/ in this repo for a Streamlit app you can deploy to Streamlit
+# Community Cloud or HuggingFace Spaces with no code changes.
+
+reproduce_command: "python src/rank.py --candidates ./data/candidates.jsonl --out ./submission.csv"
+
+# ============================================================================
+# Compute environment
+# ============================================================================
+compute:
+  platform: "Linux container (Ubuntu 24.04), 1 vCPU"
+  cpu_cores: 1
+  ram_gb: 4
+  python_version: "3.12.3"
+  os: "Ubuntu 24.04 LTS"
+  uses_gpu_for_inference: false
+  has_network_during_ranking: false
+  pre_computation_required: false
+  pre_computation_time_minutes: 0
+
+# Measured performance on the full 100,000-row candidates.jsonl, on a single
+# vCPU container with 4GB RAM available (well under the 16GB ceiling):
+#   - Load JSONL:            ~5s
+#   - Build BM25 index:      ~17s
+#   - Score all candidates:  ~37s
+#   - Total wall-clock:      ~59s
+#   - Peak RSS:              ~3.8GB
+# i.e. roughly 12x headroom on the 5-minute budget and 4x headroom on the
+# 16GB budget, measured on a single core -- a typical participant machine
+# with more cores available would not change this, since the pipeline is not
+# parallelized and doesn't need to be to fit the budget.
+
+# ============================================================================
+# AI tools declaration
+# ============================================================================
+ai_tools_used:
+  - "Claude"
+
+ai_usage_summary: |
+  Claude (Anthropic) was used as a pair-programming collaborator for the
+  full build: reading and reconciling the hackathon bundle's documents
+  (job_description, submission_spec, redrob_signals_doc, candidate_schema)
+  against an initial unrelated prompt that had been pasted into the same
+  session asking for a decorative Next.js dashboard that called a hosted
+  LLM API per candidate -- that approach was identified as incompatible
+  with the actual submission spec (which forbids hosted LLM calls during
+  ranking) and was not built. Instead, Claude was used to:
+    - directly inspect candidates.jsonl (100,000 real records) to ground
+      every scoring rule and honeypot check in actually-observed data
+      patterns, rather than guessing at the dataset's structure
+    - design and implement the JD-intent encoding, structured fit scorer,
+      behavioral signal scorer, BM25 semantic matcher, honeypot detector,
+      and reasoning generator
+    - iteratively test the honeypot heuristics against the real data and
+      discard ones that produced too many false positives (an education-
+      timeline check was built, tested, found to flag 11-22% of candidates
+      as a false positive pattern, and explicitly removed -- documented in
+      honeypot.py)
+    - catch and fix a real bug where generated reasoning text could state
+      an "applied AI years" figure exceeding the candidate's total years of
+      experience for profiles with internally inconsistent self-reported
+      data, and a CSV tie-break ordering bug caught by the organizers'
+      own validate_submission.py
+    - measure runtime/memory against the compute constraints on the full
+      100K-row dataset
+  No candidate data was sent to any hosted LLM API; all ranking logic runs
+  fully offline using rank_bm25 and the Python standard library.
+
+# ============================================================================
+# Approach summary
+# ============================================================================
+methodology_summary: |
+  Hybrid ranker combining three independently-computed signals, no hosted
+  LLM calls at ranking time. (1) Structured fit score (65% weight): JD
+  intent was read once, offline, into an explicit domain/disqualifier model
+  (jd_intent.py) covering 7 weighted core-conceptual-domains, 7 hard
+  disqualifiers from the JD's own "what we explicitly do NOT want" section,
+  and experience/location/notice fit curves. A skill counts more if it's
+  demonstrated in career-history text than if it's only a bare skill tag,
+  directly targeting the JD's own "keyword stuffer" trap warning -- verified
+  against ~1,900 real keyword-stuffer-pattern candidates (e.g. Graphic
+  Designers/HR Managers with RAG/Pinecone/LangChain in their skills list)
+  found by direct inspection of the dataset. (2) BM25 semantic match (35%
+  weight): offline, no network/GPU required, for general lexical/topical
+  recall beyond the curated domain keyword lists. (3) Behavioral modifier
+  (multiplicative, ~0.5-1.15x): recency, recruiter responsiveness,
+  availability flag, interview/offer reliability, profile trust, and market
+  validation from the 23 redrob_signals fields, per the JD's explicit
+  instruction to down-weight on-paper-strong but practically-unreachable
+  candidates. Honeypots are caught via two high-precision internal-
+  consistency checks (expert-proficiency-with-zero-duration-used;
+  total-tenure-far-exceeding-claimed-experience) found by direct data
+  inspection; a noisier education-timeline heuristic was tested and
+  discarded for false-positiving on real candidates. Reasoning text is
+  generated entirely from the same score breakdown fields used for ranking
+  (never invented), with phrasing shape varied based on which domains
+  actually hit, to avoid the "templated reasoning" Stage-4 penalty.
+  Runtime: ~59s / ~3.8GB peak RAM for all 100,000 candidates.
+
+# ============================================================================
+# Declarations
+# ============================================================================
+declarations:
+  read_submission_spec: true
+  code_is_original_work: true
+  no_collusion: true
+  honeypot_check_done: true
+  reproduction_tested: true
