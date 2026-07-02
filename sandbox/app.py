@@ -378,8 +378,12 @@ st.markdown(
     }
 
     .main [data-testid="stExpander"] summary,
-    .main [data-testid="stExpander"] summary span,
-    .main [data-testid="stExpander"] summary p {
+    .main [data-testid="stExpander"] summary * {
+        color: var(--ink) !important;
+    }
+
+    .main details summary,
+    .main details summary * {
         color: var(--ink) !important;
     }
 
