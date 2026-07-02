@@ -345,6 +345,47 @@ st.markdown(
         letter-spacing: 0.03em;
         margin: 2px 0;
     }
+
+    /* ---------------- Fix: native Streamlit text defaulting to light color on light bg ---------------- */
+    [data-testid="stWidgetLabel"] p,
+    [data-testid="stWidgetLabel"] span,
+    .stCheckbox label p,
+    .stCheckbox label span,
+    [data-testid="stMarkdownContainer"] p,
+    [data-testid="stMarkdownContainer"] li,
+    [data-testid="stMarkdownContainer"] span {
+        color: var(--ink) !important;
+    }
+
+    [data-testid="stCaptionContainer"],
+    [data-testid="stCaptionContainer"] p,
+    [data-testid="stCaptionContainer"] span {
+        color: var(--ink-soft) !important;
+    }
+
+    [data-testid="stProgress"] div {
+        color: var(--ink) !important;
+    }
+
+    [data-testid="stProgress"] > div > div > div {
+        background-color: var(--navy) !important;
+    }
+
+    [data-testid="stFileUploaderDropzoneInstructions"] div,
+    [data-testid="stFileUploaderDropzoneInstructions"] span {
+        color: var(--ink) !important;
+    }
+
+    [data-testid="stExpander"] summary,
+    [data-testid="stExpander"] summary span,
+    [data-testid="stExpander"] summary p {
+        color: var(--ink) !important;
+    }
+
+    [data-testid="stAlertContentInfo"],
+    [data-testid="stAlertContentInfo"] p {
+        color: var(--ink) !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
