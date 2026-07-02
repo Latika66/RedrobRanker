@@ -91,6 +91,7 @@ class DenseRetriever:
                 logger.info("Loading cached candidate embeddings …")
                 self._candidate_vecs = np.load(str(cache_file))
                 self._build_index()
+                self._model = self._load_model()
                 return
 
         logger.info("Encoding %d candidates with %s …", len(candidates), self.MODEL_NAME)

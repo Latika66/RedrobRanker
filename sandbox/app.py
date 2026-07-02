@@ -237,7 +237,7 @@ def render_sidebar() -> None:
         )
         st.divider()
 
-        st.markdown("#### ⚙️ Ranking Pipeline")
+        st.markdown("#### Ranking Pipeline")
         st.markdown(
             """
             The pipeline combines **semantic retrieval** with
@@ -248,7 +248,7 @@ def render_sidebar() -> None:
         )
         st.divider()
 
-        with st.expander("📄 Job Description", expanded=False):
+        with st.expander("📄Job Description", expanded=False):
             st.text(JD_TEXT.strip())
 
         st.markdown(
@@ -265,16 +265,16 @@ def render_hero() -> None:
     st.markdown(
         """
         <div class="hero-banner">
-            <div class="hero-title">🧠 RedrobRanker</div>
+            <div class="hero-title"> RedrobRanker</div>
             <div class="hero-subtitle">AI Hiring Co-Pilot — Offline Candidate Ranking Engine</div>
             <div style="font-size:0.92rem; color:#8daacf; margin-bottom:1rem; max-width:680px; line-height:1.6;">
                 Upload candidate profiles and receive explainable AI-powered rankings in seconds
                 using an entirely offline ranking engine — no APIs, no GPU, no internet required.
             </div>
-            <span class="hero-pill">⚡ Semantic Matching</span>
-            <span class="hero-pill">📊 Structured Evaluation</span>
-            <span class="hero-pill">🧭 Behavioral Intelligence</span>
-            <span class="hero-pill">💡 Explainable AI</span>
+            <span class="hero-pill"> Semantic Matching</span>
+            <span class="hero-pill"> Structured Evaluation</span>
+            <span class="hero-pill"> Behavioral Intelligence</span>
+            <span class="hero-pill"> Explainable AI</span>
         </div>
         """,
         unsafe_allow_html=True,
@@ -314,7 +314,7 @@ def render_input_section() -> Optional[list]:
                 with open(sample_path) as f:
                     candidates = json.load(f)
                 st.success(
-                    f"✅ Loaded **{len(candidates)}** candidates from bundled sample.",
+                    f"Loaded **{len(candidates)}** candidates from bundled sample.",
                     icon="📦",
                 )
             else:
@@ -331,7 +331,7 @@ def render_input_section() -> Optional[list]:
                 ]
             except json.JSONDecodeError:
                 candidates = json.loads(raw)
-            st.success(f"✅ Uploaded **{len(candidates)}** candidates.", icon="📄")
+            st.success(f"Uploaded **{len(candidates)}** candidates.", icon="📄")
 
         if candidates and len(candidates) > 100:
             st.warning(
@@ -344,7 +344,7 @@ def render_input_section() -> Optional[list]:
         if candidates:
             rank_clicked = st.button("🚀 Rank Candidates", type="primary")
         else:
-            st.info("☝️ Upload a sample or enable the bundled sample checkbox above.")
+            st.info("Upload a sample or enable the bundled sample checkbox above.")
 
     with right_col:
         render_pipeline_diagram()
@@ -355,13 +355,13 @@ def render_input_section() -> Optional[list]:
 def render_pipeline_diagram() -> None:
     st.markdown('<div class="section-header">🔄 Ranking Pipeline</div>', unsafe_allow_html=True)
     steps = [
-        ("📄", "Job Description"),
-        ("🧠", "Intent Extraction"),
-        ("🔍", "Semantic Matching"),
-        ("📊", "Structured Evaluation"),
-        ("🧭", "Behavioral Intelligence"),
-        ("💡", "Explainable AI"),
-        ("🏆", "Final Ranking"),
+        ("Job Description"),
+        ("Intent Extraction"),
+        ("Semantic Matching"),
+        ("Structured Evaluation"),
+        ("Behavioral Intelligence"),
+        ("Explainable AI"),
+        ("Final Ranking"),
     ]
     for i, (icon, label) in enumerate(steps):
         st.markdown(
@@ -413,29 +413,29 @@ def run_ranking(candidates: list) -> tuple[pd.DataFrame, list, float]:
     t0 = time.time()
 
     # Step 1 — candidates already loaded
-    progress_bar.progress(10, text="⚙️ Loading candidates …")
+    progress_bar.progress(10, text="Loading candidates …")
 
     # Step 2 — build semantic index
-    progress_bar.progress(20, text="🔍 Building semantic index …")
+    progress_bar.progress(20, text="Building semantic index …")
     matcher = SemanticMatcher(candidates)
 
     # Step 3 — semantic similarity
-    progress_bar.progress(40, text="📐 Computing semantic similarity …")
+    progress_bar.progress(40, text="Computing semantic similarity …")
     semantic_scores = matcher.score_all(JD_TEXT)
 
     # Step 4 — structured + behavioral + honeypot per candidate
-    progress_bar.progress(55, text="🏗️ Computing structured scores …")
+    progress_bar.progress(55, text="Computing structured scores …")
     raw_results = [
         score_candidate(c, semantic_scores[c["candidate_id"]]) for c in candidates
     ]
 
-    progress_bar.progress(70, text="🧭 Computing behavioral scores …")
+    progress_bar.progress(70, text="Computing behavioral scores …")
     # (behavioral scoring happens inside score_candidate — no duplicate work)
 
     # Step 5 — compute final score from components and sort
     # score_candidate() returns component scores; final_score is assembled here
     # using the same formula as rank.py's compute_final() (alpha=0.40, beta=0.60).
-    progress_bar.progress(80, text="📊 Computing final scores …")
+    progress_bar.progress(80, text="Computing final scores …")
     for r in raw_results:
         r["final_score"] = (
             (0.40 * r["semantic_score"] + 0.60 * r["structured_score"])
@@ -445,11 +445,11 @@ def run_ranking(candidates: list) -> tuple[pd.DataFrame, list, float]:
     raw_results.sort(key=lambda r: (-r["final_score"], r["candidate_id"]))
 
     # Step 6 — reasoning
-    progress_bar.progress(90, text="💡 Generating reasoning …")
+    progress_bar.progress(90, text="Generating reasoning …")
     by_id = {c["candidate_id"]: c for c in candidates}
     rows = []
     for i, r in enumerate(raw_results):
-        rank = i + 1
+        # We temporarily set rank to i + 1, but we will recalculate it after the display-score sort
         candidate = by_id[r["candidate_id"]]
         reasoning_text = rsn.build_reasoning(
             candidate,
@@ -457,13 +457,13 @@ def run_ranking(candidates: list) -> tuple[pd.DataFrame, list, float]:
             r["behavioral_bd"],
             r["semantic_score"],
             r["final_score"],
-            rank,
+            i + 1,
         )
         final = round(r["final_score"], 4)
         rows.append(
             {
                 "candidate_id": r["candidate_id"],
-                "rank": rank,
+                "rank": i + 1,
                 "score": final,
                 "recommendation": get_recommendation(final),
                 "semantic_score": round(r["semantic_score"], 4),
@@ -473,6 +473,15 @@ def run_ranking(candidates: list) -> tuple[pd.DataFrame, list, float]:
                 "reasoning": reasoning_text,
             }
         )
+
+    rows.sort(key=lambda r: (-r["score"], r["candidate_id"]))
+    for i, row in enumerate(rows):
+        row["rank"] = i + 1
+    
+    # Non-increasing guard
+    for i in range(1, len(rows)):
+        if rows[i]["score"] > rows[i-1]["score"]:
+            rows[i]["score"] = rows[i-1]["score"]
 
     elapsed = time.time() - t0
     progress_bar.progress(100, text=f"✅ Done — {len(rows)} candidates ranked in {elapsed:.2f}s")
@@ -494,11 +503,11 @@ def render_kpi_metrics(df: pd.DataFrame, elapsed: float) -> None:
     flagged = df["honeypot_flagged"].sum()
 
     with c1:
-        st.metric("🏅 Candidates Ranked", total)
+        st.metric("Candidates Ranked", total)
     with c2:
-        st.metric("📊 Average Score", f"{avg_score:.4f}")
+        st.metric("Average Score", f"{avg_score:.4f}")
     with c3:
-        st.metric("🥇 Highest Score", f"{top_score:.4f}")
+        st.metric("Highest Score", f"{top_score:.4f}")
     with c4:
         st.metric(
             "⚠️ Honeypot Flags",
@@ -551,7 +560,7 @@ def render_ranking_table(df: pd.DataFrame) -> None:
 # ===========================================================================
 def render_candidate_details(df: pd.DataFrame) -> None:
     st.markdown(
-        '<div class="section-header">🔎 Candidate Detail Cards</div>',
+        '<div class="section-header"> Candidate Detail Cards</div>',
         unsafe_allow_html=True,
     )
     st.caption(
@@ -575,13 +584,13 @@ def render_candidate_details(df: pd.DataFrame) -> None:
             col_a, col_b, col_c = st.columns(3)
 
             with col_a:
-                st.markdown("**📌 Candidate ID**")
+                st.markdown("**Candidate ID**")
                 st.code(row["candidate_id"], language=None)
-                st.markdown(f"**🏅 Rank:** {rank}")
+                st.markdown(f"**Rank:** {rank}")
                 st.markdown(f"**Recommendation:** {rec_emoji} {rec}")
 
             with col_b:
-                st.markdown("**📊 Score Breakdown**")
+                st.markdown("**Score Breakdown**")
                 st.metric("Final Score", f"{row['score']:.4f}")
                 if "semantic_score" in row and pd.notna(row["semantic_score"]):
                     st.metric("Semantic", f"{row['semantic_score']:.4f}")
@@ -591,13 +600,13 @@ def render_candidate_details(df: pd.DataFrame) -> None:
                     st.metric("Behavioral ×", f"{row['behavioral_mult']:.4f}")
 
             with col_c:
-                st.markdown("**💡 Reasoning**")
+                st.markdown("**Reasoning**")
                 st.markdown(
                     f"<div style='font-size:0.88rem; color:#b0bdd0; line-height:1.6;'>"
                     f"{row['reasoning']}</div>",
                     unsafe_allow_html=True,
                 )
-                st.markdown("**🔒 Honeypot Status**")
+                st.markdown("**Honeypot Status**")
                 if flagged:
                     st.markdown(
                         '<span class="flag-badge">⚠️ Flagged</span>',
@@ -720,8 +729,8 @@ def render_footer() -> None:
     st.markdown(
         """
         <div class="footer-box">
-            <div class="footer-text">🧠 Powered by the <strong>RedrobRanker</strong> offline ranking pipeline.</div>
-            <div class="footer-text">⚡ Runs entirely on CPU — no external APIs, no hosted LLMs, no network access required.</div>
+            <div class="footer-text"> Powered by the <strong>RedrobRanker</strong> offline ranking pipeline.</div>
+            <div class="footer-text"> Runs entirely on CPU — no external APIs, no hosted LLMs, no network access required.</div>
         </div>
         """,
         unsafe_allow_html=True,
